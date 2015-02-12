@@ -1,6 +1,6 @@
 {
   "name": "hapi-postman",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Hapi plugin that exposes endpoint meta-data that can be imported as a postman collection.",
   "main": "index.js",
   "dependencies": {
