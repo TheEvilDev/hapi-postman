@@ -5,7 +5,7 @@ var PostmanCollection = function(name, requests) {
     var _collectionId = uuid.v4();
 
     for (var i = 0; i < requests.length; i++) {
-        request.collectionId = _collectionId;
+        requests[i].collectionId = _collectionId;
     }
 
     return {
@@ -25,22 +25,52 @@ var PostmanRequest = function(name, description, url, method, headers, data, dat
         description: description,
         url: url,
         method: method,
-        headers: headers,
-        data: data,
-        dataMode: dataMode,
+        headers: headers || "",
+        data: data || [],
+        dataMode: dataMode || "params",
         timestamp: new Date().getTime()
     };
 };
 
+var getConnections = function(server) {
+    var routeTable = server.table;
+    var connections = [];
+
+    for (var i = 0; i < routeTable.length; i++) {
+        connections.push(server.table[i]);
+    }
+
+    return connections;
+};
+
+var getRoutesData = function(connections) {
+
+    var requests = [];
+
+    for (var i = 0; i < connections.length; i++) {
+        for (var j = 0; j < connections[i].table.length; j++) {
+            console.log("Connection: ", connections[i]);
+            console.log('Route Table: ', connections[i].table[j]);
+            var route = connections[i].table[j];
+            requests.push(new PostmanRequest(route.path.replace('/', ' ').trim(), route.settings.description || '', connections[i].info.uri + route.path, route.method));
+        }
+    }
+
+    return requests;
+};
+
 exports.register = function(server, options, next) {
     endpoint = options.endpoint || '/postman';
+    name = options.name;
 
     server.route({
         method: 'GET',
         path: endpoint,
         handler: function(request, reply) {
-            var endpoint = new PostmanRequest('Test', 'Test Endpoint', 'http://localhost', '/test');
-            var collection = new PostmanCollection('TestCollection', [endpoint]);
+            console.log('Server Table', server.table());
+            var routeData = getRoutesData(server.table());
+
+            var collection = new PostmanCollection('Awesome', routeData);
             reply(collection);
         },
         config: {
