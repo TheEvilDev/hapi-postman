@@ -16,7 +16,7 @@ var PostmanCollection = function(name, requests) {
     };
 };
 
-var PostmanRequest = function(name, description, url, method, headers, data, dataMode) {
+var PostmanRequest = function(name, description, url, method, headers) {
     var _requestId = uuid.v4();
     return {
         collectionId: null,
@@ -26,8 +26,8 @@ var PostmanRequest = function(name, description, url, method, headers, data, dat
         url: url,
         method: method,
         headers: headers || "",
-        data: data || [],
-        dataMode: dataMode || "params",
+        data: [],
+        dataMode: "params",
         timestamp: new Date().getTime()
     };
 };
@@ -43,16 +43,29 @@ var getConnections = function(server) {
     return connections;
 };
 
-var getRoutesData = function(connections) {
+var getRoutesData = function(connections, baseUri) {
 
     var requests = [];
 
     for (var i = 0; i < connections.length; i++) {
         for (var j = 0; j < connections[i].table.length; j++) {
-            console.log("Connection: ", connections[i]);
-            console.log('Route Table: ', connections[i].table[j]);
+            var base = baseUri || connections[i].info.uri;
             var route = connections[i].table[j];
-            requests.push(new PostmanRequest(route.path.replace('/', ' ').trim(), route.settings.description || '', connections[i].info.uri + route.path, route.method));
+            var postmanSettings = route.settings.plugins.postman || null;
+
+            var postmanRequest = new PostmanRequest(route.path.replace('/', ' ').trim(),
+                route.settings.description || '',
+                base + route.path,
+                route.method);
+
+            if (postmanSettings !== null) {
+                var data = postmanSettings.data || null;
+                if (data !== null) {
+                    postmanRequest.dataMode = 'raw';
+                    postmanRequest.data = JSON.stringify(data);
+                }
+            }
+            requests.push(postmanRequest);
         }
     }
 
@@ -67,10 +80,9 @@ exports.register = function(server, options, next) {
         method: 'GET',
         path: endpoint,
         handler: function(request, reply) {
-            console.log('Server Table', server.table());
-            var routeData = getRoutesData(server.table());
+            var routeData = getRoutesData(server.table(), options.baseUri);
 
-            var collection = new PostmanCollection('Awesome', routeData);
+            var collection = new PostmanCollection(options.collection || uuid.v4(), routeData);
             reply(collection);
         },
         config: {

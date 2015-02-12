@@ -25,7 +25,9 @@ Simply register the plugin with your hapi server, and configure the optional ove
     server.register({
         register: require('hapi-postman'),
         options: {
-          endpoint: '/postmanRocks' // Default: /postman
+            endpoint: '/metadata', // Default: postman
+            collection: 'Awesome Collection', // Default: Random GUID
+            baseUri: 'http://localhost:12345' // Default: connection.info.uri
         }
       },
       function(err) {
@@ -35,4 +37,27 @@ Simply register the plugin with your hapi server, and configure the optional ove
       });
 
     server.start();
+```
+
+You can additionally, provide postman with a sample data body during route creation:
+
+```javascript
+server.route({
+    method: 'POST',
+    path: '/test',
+    handler: function(request, reply) {
+        reply('Hello World!');
+    },
+    config: {
+        description: 'Test endpoint for demo purposes <strong>Postman Descriptions also support html</strong>',
+        plugins: {
+            postman: {
+                data: { // JSON Object in whatever format you want, this will be what postman is told is a sample request body.
+                    message: 'Something cool',
+                    timestamp: new Date().getTime()
+                }
+            }
+        }
+    }
+});
 ```
