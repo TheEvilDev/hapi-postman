@@ -49,7 +49,7 @@ var getRoutesData = function(connections, baseUri) {
 
     for (var i = 0; i < connections.length; i++) {
         for (var j = 0; j < connections[i].table.length; j++) {
-            var base = baseUri || connections[i].info.uri;
+            var base = baseUri === undefined ? connections[i].info.uri : baseUri;
             var route = connections[i].table[j];
             var postmanSettings = route.settings.plugins.postman || null;
 
